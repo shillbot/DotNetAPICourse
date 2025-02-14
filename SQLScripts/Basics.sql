@@ -9,22 +9,29 @@ GO
 
 CREATE TABLE TutorialAppSchema.Computer
 (
-    -- TableId INT  IDENTITY(Starting, Increment By) 
-    ComputerId INT IDENTITY(1, 1) PRIMARY KEY
+	-- TableId INT  IDENTITY(Starting, Increment By) 
+	ComputerId INT IDENTITY(1, 1) PRIMARY KEY
     -- , Motherboard CHAR(10) 'x' 'x         '
     -- , Motherboard VARCHAR(10) 'x' 'x'
     -- , Motherboard NVARCHAR(255) --'x'
-    , Motherboard NVARCHAR(50)  --'x'
-    , CPUCores INT              --NOT NULL
-    , HasWifi BIT
-    , HasLTE BIT
-    , ReleaseDate DATETIME
-    , Price DECIMAL(18, 4)
-    , VideoCard NVARCHAR(50)
+    ,
+	Motherboard NVARCHAR(50)  --'x'
+    ,
+	CPUCores INT              --NOT NULL
+    ,
+	HasWifi BIT
+    ,
+	HasLTE BIT
+    ,
+	ReleaseDate DATETIME
+    ,
+	Price DECIMAL(18, 4)
+    ,
+	VideoCard NVARCHAR(50)
 );
 GO
 
-SELECT  [ComputerId]
+SELECT [ComputerId]
         , [Motherboard]
         , [CPUCores]
         , [HasWifi]
@@ -32,16 +39,18 @@ SELECT  [ComputerId]
         , [ReleaseDate]
         , [Price]
         , [VideoCard]
-  FROM  TutorialAppSchema.Computer;
+FROM TutorialAppSchema.Computer;
 
-INSERT INTO TutorialAppSchema.Computer ([Motherboard]
-                                        , [CPUCores]
-                                        , [HasWifi]
-                                        , [HasLTE]
-                                        , [ReleaseDate]
-                                        , [Price]
-                                        , [VideoCard])
-VALUES ('Sample-Motherboard'
+INSERT INTO TutorialAppSchema.Computer
+	([Motherboard]
+	, [CPUCores]
+	, [HasWifi]
+	, [HasLTE]
+	, [ReleaseDate]
+	, [Price]
+	, [VideoCard])
+VALUES
+	('Sample-Motherboard'
         , 4
         , 1  -- true
         , 0                         -- false
@@ -57,7 +66,7 @@ UPDATE  TutorialAppSchema.Computer
    SET  Motherboard = 'Obsolete'
  WHERE  HasWifi = 0;
 
-SELECT  [ComputerId]
+SELECT [ComputerId]
         , [Motherboard]
         , ISNULL ([CPUCores], 4) AS CPUCores
         , [HasWifi]
@@ -65,13 +74,13 @@ SELECT  [ComputerId]
         , [ReleaseDate]
         , [Price]
         , [VideoCard]
-  FROM  TutorialAppSchema.Computer;
+FROM TutorialAppSchema.Computer;
 
 UPDATE  TutorialAppSchema.Computer
    SET  CPUCores = 4
  WHERE  CPUCores IS NULL;
 
-SELECT  [ComputerId]
+SELECT [ComputerId]
         , [Motherboard]
         , ISNULL ([CPUCores], 4) AS CPUCores
         , [HasWifi]
@@ -79,8 +88,8 @@ SELECT  [ComputerId]
         , [ReleaseDate]
         , [Price]
         , [VideoCard]
-  FROM  TutorialAppSchema.Computer
- ORDER BY
+FROM TutorialAppSchema.Computer
+ORDER BY
     HasLTE DESC
     , ReleaseDate DESC;
 
