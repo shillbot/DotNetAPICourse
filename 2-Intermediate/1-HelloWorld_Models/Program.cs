@@ -1,6 +1,9 @@
 ﻿using System;
+using System.Data;
 using System.Text.RegularExpressions;
+using Dapper;
 using HelloWorld.Models;
+using Microsoft.Data.SqlClient;
 
 namespace HelloWorld
 {
@@ -8,6 +11,9 @@ namespace HelloWorld
 	{
 		static void Main(string[] args)
 		{
+			string connectionString = "Server=localhost; Database=DotNetCourseDatabase; TrustServerCertificate=true; Trusted_Connection=false; User Id=sa; Password=SQLConnect1!";
+			IDbConnection dbConnection = new SqlConnection(connectionString);
+
 			Computer myComputer = new Computer()
 			{
 				Motherboard = "Z690",
