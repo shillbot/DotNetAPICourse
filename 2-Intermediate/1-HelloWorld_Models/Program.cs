@@ -1,9 +1,5 @@
-﻿using System;
-using System.Data;
-using System.Text.RegularExpressions;
-using Dapper;
+﻿using HelloWorld.Data;
 using HelloWorld.Models;
-using Microsoft.Data.SqlClient;
 
 namespace HelloWorld
 {
@@ -11,8 +7,7 @@ namespace HelloWorld
 	{
 		static void Main(string[] args)
 		{
-			string connectionString = "Server=localhost; Database=DotNetCourseDatabase; TrustServerCertificate=true; Trusted_Connection=false; User Id=sa; Password=SQLConnect1!";
-			IDbConnection dbConnection = new SqlConnection(connectionString);
+			DataContextDapper dapper = new DataContextDapper();
 
 			Computer myComputer = new Computer()
 			{
@@ -23,11 +18,55 @@ namespace HelloWorld
 				Price = 943.87m,
 				VideoCard = "RTX 2060"
 			};
-			myComputer.HasWifi = false;
-			Console.WriteLine(myComputer.Motherboard);
-			Console.WriteLine(myComputer.HasWifi);
-			Console.WriteLine(myComputer.ReleaseDate);
-			Console.WriteLine(myComputer.VideoCard);
+
+			string sql = @"INSERT INTO TutorialAppSchema.Computer (
+				Motherboard,
+				HasWifi,
+				HasLTE,
+				ReleaseDate,
+				Price,
+				VideoCard
+			) VALUES ('" +
+				myComputer.Motherboard + "', '" +
+				myComputer.HasWifi + "', '" +
+				myComputer.HasLTE + "', '" +
+				myComputer.ReleaseDate.ToString("yyyy-MM-dd HH:mm:ss.fff") + "', '" +
+				myComputer.Price + "', '" +
+				myComputer.VideoCard
+			+ "')";
+			Console.WriteLine("SQL Statement: " + sql);
+
+			bool result = dapper.ExecuteSql(sql);
+			// Console.WriteLine("Rows Affected: " + result);
+
+			string sqlSelect = @"
+				SELECT tasc.Motherboard,
+					tasc.HasWifi,
+					tasc.HasLTE,
+					tasc.ReleaseDate,
+					tasc.Price,
+					tasc.VideoCard
+				FROM TutorialAppSchema.Computer AS tasc"
+			;
+
+			IEnumerable<Computer> computers = dapper.LoadData<Computer>(sqlSelect);
+			foreach (Computer computer in computers)
+			{
+				Console.WriteLine("'" +
+					computer.Motherboard + "', '" +
+					computer.HasWifi + "', '" +
+					computer.HasLTE + "', '" +
+					computer.ReleaseDate + "', '" +
+					computer.Price + "', '" +
+					computer.VideoCard
+				+ "'");
+			}
+
+			// myComputer.HasWifi = false;
+			// Console.WriteLine(myComputer.Motherboard);
+			// Console.WriteLine(myComputer.HasWifi);
+			// Console.WriteLine(myComputer.ReleaseDate);
+			// Console.WriteLine(myComputer.VideoCard);
 		}
 
 	}
