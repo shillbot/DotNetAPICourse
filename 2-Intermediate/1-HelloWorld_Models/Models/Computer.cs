@@ -1,11 +1,14 @@
 using System;
+using System.ComponentModel.DataAnnotations;
 
 namespace HelloWorld.Models;
 
 public class Computer
 {
+	[Key]
+	public int ComputerId { get; set; }
 	public string Motherboard { get; set; }
-	public int CPUCores { get; set; }
+	public int? CPUCores { get; set; }
 	public bool HasWifi { get; set; }
 	public bool HasLTE { get; set; }
 	public DateTime ReleaseDate { get; set; }
@@ -21,6 +24,10 @@ public class Computer
 		if (Motherboard == null)
 		{
 			Motherboard = "";
+		}
+		if (CPUCores == null)
+		{
+			CPUCores = 0;
 		}
 	}
 }
