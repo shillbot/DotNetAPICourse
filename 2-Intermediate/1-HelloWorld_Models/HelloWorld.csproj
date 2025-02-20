@@ -14,7 +14,14 @@
     <PackageReference Include="microsoft.entityframeworkcore.sqlserver" Version="9.0.2" />
     <PackageReference Include="Microsoft.Extensions.Configuration" Version="9.0.2" />
     <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="9.0.2" />
+	<PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
 	<None Update="appsettings.json">
+		<CopyToOutputDirectory>Always</CopyToOutputDirectory>
+	</None>
+	<None Update="Computers.json">
+		<CopyToOutputDirectory>Always</CopyToOutputDirectory>
+	</None>
+	<None Update="log.txt">
 		<CopyToOutputDirectory>Always</CopyToOutputDirectory>
 	</None>
   </ItemGroup>

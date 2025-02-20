@@ -1,6 +1,11 @@
-﻿using HelloWorld.Data;
+﻿using System.Runtime.Serialization;
+using System.Text.Json;
+using HelloWorld.Data;
 using HelloWorld.Models;
 using Microsoft.Extensions.Configuration;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Converters;
+using Newtonsoft.Json.Serialization;
 
 namespace HelloWorld
 {
@@ -8,74 +13,54 @@ namespace HelloWorld
 	{
 		static void Main(string[] args)
 		{
-			IConfiguration config = new ConfigurationBuilder()
-				.AddJsonFile("appsettings.json")
-				.Build();
-
+			IConfiguration config = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build();
 			DataContextDapper dapper = new DataContextDapper(config);
-			DataContextEF entityFramework = new DataContextEF(config);
 
-			Computer myComputer = new Computer()
+			string computersJson = File.ReadAllText("Computers.json");
+			// Console.WriteLine(computersJson);
+
+			// JsonSerializerOptions options = new JsonSerializerOptions() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
+			// IEnumerable<Computer>? computers = JsonSerializer.Deserialize<IEnumerable<Computer>>(computersJson, options);
+			IEnumerable<Computer>? computers = JsonConvert.DeserializeObject<IEnumerable<Computer>>(computersJson, new IsoDateTimeConverter { DateTimeFormat = "yyyy-MM-dd" });
+
+			if (computers != null)
 			{
-				Motherboard = "Z690",
-				HasWifi = true,
-				HasLTE = false,
-				ReleaseDate = DateTime.Now,
-				Price = 943.87m,
-				VideoCard = "RTX 2060"
-			};
-
-			entityFramework.Add(myComputer);
-			entityFramework.SaveChanges();
-			Console.WriteLine("SAVED");
-
-			// string sql = @"INSERT INTO TutorialAppSchema.Computer (
-			// 	Motherboard,
-			// 	HasWifi,
-			// 	HasLTE,
-			// 	ReleaseDate,
-			// 	Price,
-			// 	VideoCard
-			// ) VALUES ('" +
-			// 	myComputer.Motherboard + "', '" +
-			// 	myComputer.HasWifi + "', '" +
-			// 	myComputer.HasLTE + "', '" +
-			// 	myComputer.ReleaseDate.ToString("yyyy-MM-dd HH:mm:ss.fff") + "', '" +
-			// 	myComputer.Price + "', '" +
-			// 	myComputer.VideoCard
-			// + "')";
-			// Console.WriteLine("SQL Statement: " + sql);
-
-			// bool result = dapper.ExecuteSql(sql);
-			// Console.WriteLine("Rows Affected: " + result);
-
-			// string sqlSelect = @"
-			// 	SELECT tasc.Motherboard,
-			// 		tasc.HasWifi,
-			// 		tasc.HasLTE,
-			// 		tasc.ReleaseDate,
-			// 		tasc.Price,
-			// 		tasc.VideoCard
-			// 	FROM TutorialAppSchema.Computer AS tasc"
-			// ;
-			// IEnumerable<Computer> computers = dapper.LoadData<Computer>(sqlSelect);
-			IEnumerable<Computer>? computersEF = entityFramework.Computer?.ToList();
-			if (computersEF != null)
-			{
-				foreach (Computer computer in computersEF)
+				foreach (Computer myComputer in computers)
 				{
-					Console.WriteLine("'" +
-						computer.ComputerId + "', '" +
-						computer.Motherboard + "', '" +
-						computer.HasWifi + "', '" +
-						computer.HasLTE + "', '" +
-						computer.ReleaseDate + "', '" +
-						computer.Price + "', '" +
-						computer.VideoCard
-					+ "'");
+					string sql = @"
+					INSERT INTO TutorialAppSchema.Computer (
+						Motherboard,
+						HasWifi,
+						HasLTE,
+						ReleaseDate,
+						Price,
+						VideoCard
+					) VALUES ('" +
+						escSingleQuote(myComputer.Motherboard) + "', '" +
+						myComputer.HasWifi + "', '" +
+						myComputer.HasLTE + "', '" +
+						myComputer.ReleaseDate?.ToString("yyyy-MM-dd") + "', '" +
+						myComputer.Price + "', '" +
+						escSingleQuote(myComputer.VideoCard)
+					+ "')";
+
+					dapper.ExecuteSql(sql);
 				}
 			}
 
+			// string computersCopy = System.Text.Json.JsonSerializer.Serialize(computers, options);
+			// File.WriteAllText("log.txt", computersCopy);
+
+			// JsonSerializerSettings settings = new JsonSerializerSettings() { ContractResolver = new CamelCasePropertyNamesContractResolver() };
+			// string computersCopyNS = JsonConvert.SerializeObject(computers, settings);
+			// File.WriteAllText("logNS.txt", computersCopyNS);
+
+		}
+
+		static string escSingleQuote(string sql)
+		{
+			string output = sql.Replace("'", "''");
+			return output;
 		}
 
 	}
