@@ -8,6 +8,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="AutoMapper" Version="14.0.0" />
     <PackageReference Include="Dapper" Version="2.1.66" />
     <PackageReference Include="microsoft.data.sqlclient" Version="6.0.1" />
     <PackageReference Include="microsoft.entityframeworkcore" Version="9.0.2" />
@@ -20,6 +21,9 @@
 	</None>
 	<None Update="Computers.json">
 		<CopyToOutputDirectory>Always</CopyToOutputDirectory>
+	</None>
+	<None Update="ComputersSnake.json">
+	  <CopyToOutputDirectory>Always</CopyToOutputDirectory>
 	</None>
 	<None Update="log.txt">
 		<CopyToOutputDirectory>Always</CopyToOutputDirectory>
