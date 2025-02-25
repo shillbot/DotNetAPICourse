@@ -1,4 +1,5 @@
-﻿using DotnetAPI.Data;
+﻿using System.Data;
+using DotnetAPI.Data;
 using DotnetAPI.Models;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -7,14 +8,9 @@ namespace DotnetAPI.Controllers;
 
 [Route("[controller]")]
 [ApiController]
-public class UserController : ControllerBase
+public class UserController(IConfiguration config) : ControllerBase
 {
-	DataContextDapper _dapper;
-
-	public UserController(IConfiguration config)
-	{
-		_dapper = new DataContextDapper(config);
-	}
+	private readonly DataContextDapper _dapper = new(config);
 
 	[HttpGet("GetUsers")]
 	public IEnumerable<User> GetUsers()
@@ -34,8 +30,8 @@ public class UserController : ControllerBase
 
 	[HttpGet("GetUser/{userId}")]
 	public User GetUser(int userId)
-    {
-        string sql = @"
+	{
+		string sql = @"
 			SELECT UserId,
 				   FirstName,
 				   LastName,
@@ -44,25 +40,47 @@ public class UserController : ControllerBase
 				   Active
 			FROM TutorialAppSchema.Users
             WHERE UserId = " + userId.ToString(); // Not parameterized -- This is horrible.
-        User user = _dapper.LoadDataSingle<User>(sql);
-        return user;
+		User user = _dapper.LoadDataSingle<User>(sql);
+		return user;
+	}
+
+	[HttpPut("EditUser")]
+	public IActionResult EditUser(User user)
+	{
+		string sql = @"
+            UPDATE TutorialAppSchema.Users
+            SET FirstName = '" + user.FirstName + "',  LastName = '" + user.LastName + "', Email = '" + user.Email + "', Gender = '" + user.Gender + "', Active = '" + user.Active +
+			"' WHERE UserId = " + user.UserId;
+
+        if (_dapper.ExecuteSql(sql))
+            return Ok();
+
+        throw new DataException("Update Failed.");
     }
 
-	//[HttpGet("TestConnection")]
-	//public DateTime TestConnection()
-	//{
-	//    return _dapper.LoadDataSingle<DateTime>("SELECT GETDATE()");
-	//}
+	[HttpPost("AddUser")]
+	public IActionResult AddUser(User user)
+    {
+        string sql = @"
+        INSERT INTO TutorialAppSchema.Users
+        (
+            FirstName,
+            LastName,
+            Email,
+            Gender,
+            Active
+        )
+        VALUES
+        (
+            '" + user.FirstName + "', '" + user.LastName + "', '" + user.Email + "', '" + user.Gender + "', '" + user.Active +
+			"'" +
+        ")";
 
-	//  [HttpGet("GetUsers/{testValue}")]
-	//  public string[] GetUsers(string testValue)
-	//  {
-	//      string[] responseArray =
-	//[
-	//	"test1", 
-	//	testValue
-	//      ];
-	//      return responseArray;
-	//  }
+        Console.WriteLine(sql);
+        if (_dapper.ExecuteSql(sql))
+            return Ok();
+
+        throw new DataException("Insert Failed.");
+	}
 }
 
