@@ -49,11 +49,12 @@ public class UserController(IConfiguration config) : ControllerBase
 	{
 		string sql = $@"
             UPDATE TutorialAppSchema.Users
-            SET FirstName = '{user.FirstName}',  LastName = '{user.LastName}', Email = '{user.Email}', Gender = '{user.Gender}', Active = '{user.Active}' WHERE UserId = {user.UserId}";
+            SET FirstName = '{user.FirstName}',  LastName = '{user.LastName}', 
+                Email = '{user.Email}', Gender = '{user.Gender}', Active = '{user.Active}' 
+            WHERE UserId = {user.UserId}";
 
 		if (_dapper.ExecuteSql(sql))
 			return Ok();
-
 		throw new DataException("Update Failed.");
 	}
 
@@ -94,10 +95,9 @@ public class UserController(IConfiguration config) : ControllerBase
 	public IEnumerable<UserSalary> GetUserSalary(int userId)
 	{
 		return _dapper.LoadData<UserSalary>($@"
-            SELECT UserSalary.UserId
-                    , UserSalary.Salary
-            FROM  TutorialAppSchema.UserSalary
-                WHERE UserId = {userId}");
+			SELECT UserSalary.UserId, UserSalary.Salary
+			FROM  TutorialAppSchema.UserSalary
+			WHERE UserId = {userId}");
 	}
 
 	[HttpPost("UserSalary")]
@@ -108,12 +108,8 @@ public class UserController(IConfiguration config) : ControllerBase
                 UserId,
                 Salary
             ) VALUES ({userSalaryForInsert.UserId}, {userSalaryForInsert.Salary})";
-
 		if (_dapper.ExecuteSqlWithRowCount(sql) > 0)
-		{
 			return Ok(userSalaryForInsert);
-		}
-
 		throw new Exception("Adding User Salary failed on save");
 	}
 
@@ -121,13 +117,11 @@ public class UserController(IConfiguration config) : ControllerBase
 	public IActionResult PutUserSalary(UserSalary userSalaryForUpdate)
 	{
 		string sql =
-			$"UPDATE TutorialAppSchema.UserSalary SET Salary={userSalaryForUpdate.Salary} WHERE UserId={userSalaryForUpdate.UserId}";
-
+			$@"UPDATE TutorialAppSchema.UserSalary 
+				SET Salary={userSalaryForUpdate.Salary} 
+				WHERE UserId={userSalaryForUpdate.UserId}";
 		if (_dapper.ExecuteSql(sql))
-		{
 			return Ok(userSalaryForUpdate);
-		}
-
 		throw new Exception("Updating User Salary failed on save");
 	}
 
@@ -135,12 +129,8 @@ public class UserController(IConfiguration config) : ControllerBase
 	public IActionResult DeleteUserSalary(int userId)
 	{
 		string sql = $"DELETE FROM TutorialAppSchema.UserSalary WHERE UserId={userId}";
-
 		if (_dapper.ExecuteSql(sql))
-		{
 			return Ok();
-		}
-
 		throw new Exception("Deleting User Salary failed on save");
 	}
 
@@ -148,11 +138,11 @@ public class UserController(IConfiguration config) : ControllerBase
 	public IEnumerable<UserJobInfo> GetUserJobInfo(int userId)
 	{
 		return _dapper.LoadData<UserJobInfo>($@"
-            SELECT  UserJobInfo.UserId
-                    , UserJobInfo.JobTitle
-                    , UserJobInfo.Department
-            FROM  TutorialAppSchema.UserJobInfo
-                WHERE UserId = {userId}");
+			SELECT  UserJobInfo.UserId, 
+			        UserJobInfo.JobTitle,
+			        UserJobInfo.Department
+			FROM  TutorialAppSchema.UserJobInfo
+			WHERE UserId = {userId}");
 	}
 
 	[HttpPost("UserJobInfo")]
@@ -164,12 +154,8 @@ public class UserController(IConfiguration config) : ControllerBase
                 Department,
                 JobTitle
             ) VALUES ({userJobInfoForInsert.UserId}, '{userJobInfoForInsert.Department}', '{userJobInfoForInsert.JobTitle}')";
-
 		if (_dapper.ExecuteSql(sql))
-		{
 			return Ok(userJobInfoForInsert);
-		}
-
 		throw new Exception("Adding User Job Info failed on save");
 	}
 
@@ -177,42 +163,22 @@ public class UserController(IConfiguration config) : ControllerBase
 	public IActionResult PutUserJobInfo(UserJobInfo userJobInfoForUpdate)
 	{
 		string sql =
-			$"UPDATE TutorialAppSchema.UserJobInfo SET Department='{userJobInfoForUpdate.Department}', JobTitle='{userJobInfoForUpdate.JobTitle}' WHERE UserId={userJobInfoForUpdate.UserId}";
-
+			$@"UPDATE TutorialAppSchema.UserJobInfo 
+				SET Department='{userJobInfoForUpdate.Department}', JobTitle='{userJobInfoForUpdate.JobTitle}' 
+				WHERE UserId={userJobInfoForUpdate.UserId}";
 		if (_dapper.ExecuteSql(sql))
-		{
 			return Ok(userJobInfoForUpdate);
-		}
-
 		throw new Exception("Updating User Job Info failed on save");
 	}
-
-	// [HttpDelete("UserJobInfo/{userId}")]
-	// public IActionResult DeleteUserJobInfo(int userId)
-	// {
-	//     string sql = "DELETE FROM TutorialAppSchema.UserJobInfo  WHERE UserId=" + userId;
-
-	//     if (_dapper.ExecuteSql(sql))
-	//     {
-	//         return Ok();
-	//     }
-	//     throw new Exception("Deleting User Job Info failed on save");
-	// }
 
 	[HttpDelete("UserJobInfo/{userId}")]
 	public IActionResult DeleteUserJobInfo(int userId)
 	{
 		string sql = $@"
-            DELETE FROM TutorialAppSchema.UserJobInfo 
-                WHERE UserId = '{userId}'";
-
-		Console.WriteLine(sql);
-
-		if (_dapper.ExecuteSql(sql))
-		{
+			DELETE FROM TutorialAppSchema.UserJobInfo 
+			WHERE UserId = '{userId}'";
+		if (_dapper.ExecuteSql(sql)) 
 			return Ok();
-		}
-
 		throw new Exception("Failed to Delete User");
 	}
 }

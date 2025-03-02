@@ -9,10 +9,11 @@ namespace DotnetAPI.Controllers;
 
 [Route("[controller]")]
 [ApiController]
-public class UserEfController(IConfiguration config) : ControllerBase
+public class UserEfController(IConfiguration config, IUserRepository userRepository) : ControllerBase
 {
 	private readonly DataContextEf _context = new(config);
-	private IMapper _mapper = new Mapper(new MapperConfiguration(cfg => { cfg.CreateMap<UserToAddDto, User>(); }));
+	private IUserRepository _userRepository = userRepository;
+	private readonly IMapper _mapper = new Mapper(new MapperConfiguration(cfg => { cfg.CreateMap<UserToAddDto, User>(); }));
 
 	[HttpGet("GetUsers")]
 	public IEnumerable<User> GetUsers()
@@ -41,7 +42,7 @@ public class UserEfController(IConfiguration config) : ControllerBase
 			userEf.Email = user.Email;
 			userEf.Gender = user.Gender;
 			userEf.Active = user.Active;
-			if (_context.SaveChanges() > 0)
+			if (_userRepository.SaveChanges())
 				return Ok();
 		}
 
@@ -52,8 +53,8 @@ public class UserEfController(IConfiguration config) : ControllerBase
 	public IActionResult AddUser(UserToAddDto userToAdd)
 	{
 		User userEf = _mapper.Map<User>(userToAdd);
-		_context.User.Add(userEf);
-		if (_context.SaveChanges() > 0)
+		_userRepository.AddEntity<User>(userEf);
+		if (_userRepository.SaveChanges())
 			return Ok();
 		throw new DataException("AddUser Failed.");
 	}
@@ -63,8 +64,8 @@ public class UserEfController(IConfiguration config) : ControllerBase
 	{
 		User? user = _context.User.Find(userId);
 		if (user != null)
-			_context.User.Remove(user);
-		if (_context.SaveChanges() > 0)
+			_userRepository.RemoveEntity(user);
+		if (_userRepository.SaveChanges())
 			return Ok();
 		throw new DataException("DeleteUser Failed.");
 	}
@@ -80,8 +81,8 @@ public class UserEfController(IConfiguration config) : ControllerBase
 	[HttpPost("UserSalary")]
 	public IActionResult PostUserSalaryEf(UserSalary userForInsert)
 	{
-		_context.UserSalary.Add(userForInsert);
-		if (_context.SaveChanges() > 0)
+		_userRepository.AddEntity<UserSalary>(userForInsert);
+		if (_userRepository.SaveChanges())
 		{
 			return Ok();
 		}
@@ -99,7 +100,7 @@ public class UserEfController(IConfiguration config) : ControllerBase
 		if (userToUpdate != null)
 		{
 			_mapper.Map(userForUpdate, userToUpdate);
-			if (_context.SaveChanges() > 0)
+			if (_userRepository.SaveChanges())
 			{
 				return Ok();
 			}
@@ -119,8 +120,8 @@ public class UserEfController(IConfiguration config) : ControllerBase
 
 		if (userToDelete != null)
 		{
-			_context.UserSalary.Remove(userToDelete);
-			if (_context.SaveChanges() > 0)
+			_userRepository.RemoveEntity(userToDelete);
+			if (_userRepository.SaveChanges())
 			{
 				return Ok();
 			}
@@ -143,8 +144,8 @@ public class UserEfController(IConfiguration config) : ControllerBase
 	[HttpPost("UserJobInfo")]
 	public IActionResult PostUserJobInfoEf(UserJobInfo userForInsert)
 	{
-		_context.UserJobInfo.Add(userForInsert);
-		if (_context.SaveChanges() > 0)
+		_userRepository.AddEntity<UserJobInfo>(userForInsert);
+		if (_userRepository.SaveChanges())
 		{
 			return Ok();
 		}
@@ -161,7 +162,7 @@ public class UserEfController(IConfiguration config) : ControllerBase
 		if (userToUpdate != null)
 		{
 			_mapper.Map(userForUpdate, userToUpdate);
-			if (_context.SaveChanges() > 0)
+			if (_userRepository.SaveChanges())
 			{
 				return Ok();
 			}
@@ -179,8 +180,8 @@ public class UserEfController(IConfiguration config) : ControllerBase
 
 		if (userToDelete != null)
 		{
-			_context.UserJobInfo.Remove(userToDelete);
-			if (_context.SaveChanges() > 0)
+			_userRepository.RemoveEntity(userToDelete);
+			if (_userRepository.SaveChanges())
 			{
 				return Ok();
 			}
