@@ -45,7 +45,6 @@ public class UserEfController(IConfiguration config, IUserRepository userReposit
 			if (_userRepository.SaveChanges())
 				return Ok();
 		}
-
 		throw new DataException("EditUser Failed.");
 	}
 
@@ -86,7 +85,6 @@ public class UserEfController(IConfiguration config, IUserRepository userReposit
 		{
 			return Ok();
 		}
-
 		throw new Exception("Adding UserSalary failed on save");
 	}
 
@@ -104,10 +102,7 @@ public class UserEfController(IConfiguration config, IUserRepository userReposit
 			{
 				return Ok();
 			}
-
-			throw new Exception("Updating UserSalary failed on save");
 		}
-
 		throw new Exception("Failed to find UserSalary to Update");
 	}
 
@@ -125,10 +120,7 @@ public class UserEfController(IConfiguration config, IUserRepository userReposit
 			{
 				return Ok();
 			}
-
-			throw new Exception("Deleting UserSalary failed on save");
 		}
-
 		throw new Exception("Failed to find UserSalary to delete");
 	}
 
@@ -166,7 +158,6 @@ public class UserEfController(IConfiguration config, IUserRepository userReposit
 			{
 				return Ok();
 			}
-			throw new Exception("Updating UserJobInfo failed on save");
 		}
 		throw new Exception("Failed to find UserJobInfo to Update");
 	}
@@ -185,7 +176,6 @@ public class UserEfController(IConfiguration config, IUserRepository userReposit
 			{
 				return Ok();
 			}
-			throw new Exception("Deleting UserJobInfo failed on save");
 		}
 		throw new Exception("Failed to find UserJobInfo to delete");
 	}
