@@ -13,22 +13,23 @@ public class UserEfController(IConfiguration config, IUserRepository userReposit
 {
 	private readonly DataContextEf _context = new(config);
 	private IUserRepository _userRepository = userRepository;
-	private readonly IMapper _mapper = new Mapper(new MapperConfiguration(cfg => { cfg.CreateMap<UserToAddDto, User>(); }));
+	private readonly IMapper _mapper = new Mapper(new MapperConfiguration(cfg =>
+	{
+		cfg.CreateMap<UserToAddDto, User>();
+		cfg.CreateMap<UserSalary, UserSalary>();
+		cfg.CreateMap<UserJobInfo, UserJobInfo>();
+	}));
 
 	[HttpGet("GetUsers")]
 	public IEnumerable<User> GetUsers()
 	{
-		IEnumerable<User> users = _context.User.ToList();
-		return users;
+		return _userRepository.GetUsers();
 	}
 
 	[HttpGet("GetUser/{userId}")]
 	public User GetUser(int userId)
 	{
-		User? user = _context.User.Find(userId);
-		if (user != null)
-			return user;
-		throw new DataException("GetUser Failed.");
+		return _userRepository.GetUser(userId);
 	}
 
 	[HttpPut("EditUser")]
