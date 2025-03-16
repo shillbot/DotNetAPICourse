@@ -9,4 +9,6 @@ public interface IUserRepository
 	public void RemoveEntity<T>(T entity);
 	public IEnumerable<User> GetUsers();
 	public User GetUser(int userId);
+	public UserSalary GetUserSalary(int userId);
+	public UserJobInfo GetUserJobInfo(int userId);
 }

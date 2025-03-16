@@ -59,7 +59,7 @@ public class UserController(IConfiguration config) : ControllerBase
 	}
 
 	[HttpPost("AddUser")]
-	public IActionResult AddUser(UserToAddDto userToAdd)
+	public IActionResult AddUser(UserAddDto userAdd)
 	{
 		string sql = $@"
         INSERT INTO TutorialAppSchema.Users
@@ -72,7 +72,7 @@ public class UserController(IConfiguration config) : ControllerBase
         )
         VALUES
         (
-            '{userToAdd.FirstName}', '{userToAdd.LastName}', '{userToAdd.Email}', '{userToAdd.Gender}', '{userToAdd.Active}')";
+            '{userAdd.FirstName}', '{userAdd.LastName}', '{userAdd.Email}', '{userAdd.Gender}', '{userAdd.Active}')";
 
 		if (_dapper.ExecuteSql(sql))
 			return Ok();

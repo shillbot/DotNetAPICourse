@@ -37,4 +37,20 @@ public class UserRepository(IConfiguration config) : IUserRepository
 			return user;
 		throw new DataException("GetUser Failed.");
 	}
+
+	public UserSalary GetUserSalary(int userId)
+	{
+		UserSalary? userSalary = _dataContext.UserSalary.FirstOrDefault(u => u.UserId == userId);
+		if (userSalary != null)
+			return userSalary;
+		throw new DataException("Get User Salary Failed");
+	}
+
+	public UserJobInfo GetUserJobInfo(int userId)
+	{
+		UserJobInfo? userJobInfo = _dataContext.UserJobInfo.FirstOrDefault(u => u.UserId == userId);
+		if (userJobInfo != null)
+			return userJobInfo;
+		throw new DataException("Get User Job Info Failed.");
+	}
 }

@@ -9,13 +9,12 @@ namespace DotnetAPI.Controllers;
 
 [Route("[controller]")]
 [ApiController]
-public class UserEfController(IConfiguration config, IUserRepository userRepository) : ControllerBase
+public class UserEfController(IUserRepository userRepository) : ControllerBase
 {
-	private readonly DataContextEf _context = new(config);
 	private IUserRepository _userRepository = userRepository;
 	private readonly IMapper _mapper = new Mapper(new MapperConfiguration(cfg =>
 	{
-		cfg.CreateMap<UserToAddDto, User>();
+		cfg.CreateMap<UserAddDto, User>();
 		cfg.CreateMap<UserSalary, UserSalary>();
 		cfg.CreateMap<UserJobInfo, UserJobInfo>();
 	}));
@@ -35,7 +34,7 @@ public class UserEfController(IConfiguration config, IUserRepository userReposit
 	[HttpPut("EditUser")]
 	public IActionResult EditUser(User user)
 	{
-		User? userEf = _context.User.Find(user.UserId);
+		User? userEf = _userRepository.GetUser(user.UserId);
 		if (userEf != null)
 		{
 			userEf.FirstName = user.FirstName;
@@ -50,9 +49,9 @@ public class UserEfController(IConfiguration config, IUserRepository userReposit
 	}
 
 	[HttpPost("AddUser")]
-	public IActionResult AddUser(UserToAddDto userToAdd)
+	public IActionResult AddUser(UserAddDto userAdd)
 	{
-		User userEf = _mapper.Map<User>(userToAdd);
+		User userEf = _mapper.Map<User>(userAdd);
 		_userRepository.AddEntity<User>(userEf);
 		if (_userRepository.SaveChanges())
 			return Ok();
@@ -62,7 +61,7 @@ public class UserEfController(IConfiguration config, IUserRepository userReposit
 	[HttpDelete("DeleteUser/{userId}")]
 	public IActionResult DeleteUser(int userId)
 	{
-		User? user = _context.User.Find(userId);
+		User user = _userRepository.GetUser(userId);
 		if (user != null)
 			_userRepository.RemoveEntity(user);
 		if (_userRepository.SaveChanges())
@@ -71,11 +70,9 @@ public class UserEfController(IConfiguration config, IUserRepository userReposit
 	}
 
 	[HttpGet("UserSalary/{userId}")]
-	public IEnumerable<UserSalary> GetUserSalaryEF(int userId)
+	public UserSalary GetUserSalary(int userId)
 	{
-		return _context.UserSalary
-			.Where(u => u.UserId == userId)
-			.ToList();
+		return _userRepository.GetUserSalary(userId);
 	}
 
 	[HttpPost("UserSalary")]
@@ -91,10 +88,9 @@ public class UserEfController(IConfiguration config, IUserRepository userReposit
 
 
 	[HttpPut("UserSalary")]
-	public IActionResult PutUserSalaryEf(UserSalary userForUpdate)
+	public IActionResult PutUserSalary(UserSalary userForUpdate)
 	{
-		UserSalary? userToUpdate = _context.UserSalary
-			.FirstOrDefault(u => u.UserId == userForUpdate.UserId);
+		UserSalary userToUpdate = _userRepository.GetUserSalary(userForUpdate.UserId);
 
 		if (userToUpdate != null)
 		{
@@ -109,10 +105,9 @@ public class UserEfController(IConfiguration config, IUserRepository userReposit
 
 
 	[HttpDelete("UserSalary/{userId}")]
-	public IActionResult DeleteUserSalaryEf(int userId)
+	public IActionResult DeleteUserSalary(int userId)
 	{
-		UserSalary? userToDelete = _context.UserSalary
-			.FirstOrDefault(u => u.UserId == userId);
+		UserSalary userToDelete = _userRepository.GetUserSalary(userId);
 
 		if (userToDelete != null)
 		{
@@ -127,15 +122,13 @@ public class UserEfController(IConfiguration config, IUserRepository userReposit
 
 
 	[HttpGet("UserJobInfo/{userId}")]
-	public IEnumerable<UserJobInfo> GetUserJobInfoEF(int userId)
+	public UserJobInfo GetUserJobInfo(int userId)
 	{
-		return _context.UserJobInfo
-			.Where(u => u.UserId == userId)
-			.ToList();
+		return _userRepository.GetUserJobInfo(userId);
 	}
 
 	[HttpPost("UserJobInfo")]
-	public IActionResult PostUserJobInfoEf(UserJobInfo userForInsert)
+	public IActionResult PostUserJobInfo(UserJobInfo userForInsert)
 	{
 		_userRepository.AddEntity<UserJobInfo>(userForInsert);
 		if (_userRepository.SaveChanges())
@@ -147,10 +140,9 @@ public class UserEfController(IConfiguration config, IUserRepository userReposit
 
 
 	[HttpPut("UserJobInfo")]
-	public IActionResult PutUserJobInfoEf(UserJobInfo userForUpdate)
+	public IActionResult PutUserJobInfo(UserJobInfo userForUpdate)
 	{
-		UserJobInfo? userToUpdate = _context.UserJobInfo
-			.FirstOrDefault(u => u.UserId == userForUpdate.UserId);
+		UserJobInfo? userToUpdate = _userRepository.GetUserJobInfo(userForUpdate.UserId);
 
 		if (userToUpdate != null)
 		{
@@ -165,10 +157,9 @@ public class UserEfController(IConfiguration config, IUserRepository userReposit
 
 
 	[HttpDelete("UserJobInfo/{userId}")]
-	public IActionResult DeleteUserJobInfoEf(int userId)
+	public IActionResult DeleteUserJobInfo(int userId)
 	{
-		UserJobInfo? userToDelete = _context.UserJobInfo
-			.FirstOrDefault(u => u.UserId == userId);
+		UserJobInfo userToDelete = _userRepository.GetUserJobInfo(userId);
 
 		if (userToDelete != null)
 		{
