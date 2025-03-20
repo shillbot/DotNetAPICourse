@@ -37,26 +37,31 @@ public class AuthController : Controller
 		{
 			rng.GetNonZeroBytes(passwordSalt);
 		}
-		string passwordSaltPlusString = _config.GetSection("AppSettings:PasswordKey").Value 
-			+ Convert.ToBase64String(passwordSalt);
-		byte[] passwordHash = KeyDerivation.Pbkdf2(
-			password: userRegister.Password, 
-			salt: Encoding.ASCII.GetBytes(passwordSaltPlusString),
-			prf: KeyDerivationPrf.HMACSHA256, 
-			iterationCount: 100000, 
-			numBytesRequested: 256 / 8);
+		var passwordHash = HashPassword(userRegister.Password, passwordSalt);
 
 		string sqlAuth =
 			@$"INSERT INTO  TutorialAppSchema.Auth(Email, PasswordHash, PasswordSalt) 
 				VALUES ('{userRegister.Email}', @PasswordHash, @PasswordSalt)";
-		SqlParameter[] sqlParams = new SqlParameter[2];
+		List<SqlParameter> sqlParams = new List<SqlParameter>();
 		SqlParameter passSaltParam = new("@PasswordSalt", SqlDbType.VarBinary);
 		SqlParameter passHashParam = new("@PasswordHash", SqlDbType.VarBinary);
 		passSaltParam.Value = passwordSalt;
 		passHashParam.Value = passwordHash;
-		sqlParams[0] = passHashParam;
-		sqlParams[1] = passSaltParam;
+		sqlParams.Add(passHashParam);
+		sqlParams.Add(passSaltParam);
 		if (!_dapper.ExecuteSqlWithParams(sqlAuth, sqlParams))
+			throw new Exception("Could not register user");
+		
+		string sqlUser = $@"
+	        INSERT INTO TutorialAppSchema.Users
+	        (
+        		FirstName, LastName, Email, Gender, Active
+	        )
+	        VALUES
+	        (
+        		'{userRegister.FirstName}', '{userRegister.LastName}', '{userRegister.Email}', '{userRegister.Gender}', 1
+	        )";
+		if (!_dapper.ExecuteSql(sqlUser))
 			throw new Exception("Could not register user");
 		
 		return Ok();
@@ -65,6 +70,31 @@ public class AuthController : Controller
 	[HttpPost("Login")]
 	public IActionResult Login(UserLoginDto userLogin)
 	{
+		string sqlHashSalt = @$"
+			SELECT PasswordHash, PasswordSalt
+			FROM TutorialAppSchema.Auth 
+			WHERE Email = '{userLogin.Email}'";
+		UserLoginConfirmDto userConfirm = _dapper.LoadDataSingle<UserLoginConfirmDto>(sqlHashSalt);
+
+		byte[] passwordHash = HashPassword(userLogin.Password, userConfirm.PasswordSalt);
+		for (int i = 0; i < passwordHash.Length; i++)
+		{
+			if (passwordHash[i] != userConfirm.PasswordHash[i])
+				return Unauthorized("Username or password doesn't match");
+		}
 		return Ok();
 	}
+	
+	private byte[] HashPassword(string password, byte[] passwordSalt)
+    {
+     	string passwordSaltPlusString = _config.GetSection("AppSettings:PasswordKey").Value 
+     									+ Convert.ToBase64String(passwordSalt);
+     	byte[] passwordHash = KeyDerivation.Pbkdf2(
+     		password: password, 
+     		salt: Encoding.ASCII.GetBytes(passwordSaltPlusString),
+     		prf: KeyDerivationPrf.HMACSHA256, 
+     		iterationCount: 100000, 
+     		numBytesRequested: 256 / 8);
+     	return passwordHash;
+    }
 }

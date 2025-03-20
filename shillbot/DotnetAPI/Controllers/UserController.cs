@@ -64,16 +64,12 @@ public class UserController(IConfiguration config) : ControllerBase
 		string sql = $@"
         INSERT INTO TutorialAppSchema.Users
         (
-            FirstName,
-            LastName,
-            Email,
-            Gender,
-            Active
+        	FirstName, LastName, Email, Gender, Active
         )
         VALUES
         (
-            '{userAdd.FirstName}', '{userAdd.LastName}', '{userAdd.Email}', '{userAdd.Gender}', '{userAdd.Active}')";
-
+        	'{userAdd.FirstName}', '{userAdd.LastName}', '{userAdd.Email}', '{userAdd.Gender}', '{userAdd.Active}'
+        )";
 		if (_dapper.ExecuteSql(sql))
 			return Ok();
 		throw new DataException("Insert Failed.");

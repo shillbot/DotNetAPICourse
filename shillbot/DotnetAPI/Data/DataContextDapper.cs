@@ -37,10 +37,20 @@ public class DataContextDapper
         return dbConnection.Execute(sql);
     }
 
-    public bool ExecuteSqlWithParams(string sql, params SqlParameter[] parameters)
+    public bool ExecuteSqlWithParams(string sql, params List<SqlParameter> parameters)
     {
-        IDbConnection dbConnection = new SqlConnection(_config.GetConnectionString("DefaultConnection"));
-        return dbConnection.Execute(sql, parameters) > 0;
+        SqlCommand commandWithParams = new SqlCommand(sql);
+        foreach(SqlParameter parameter in parameters)
+        {
+            commandWithParams.Parameters.Add(parameter);
+        }
+        SqlConnection dbConnection = new SqlConnection(_config.GetConnectionString("DefaultConnection"));
+        dbConnection.Open();
+        commandWithParams.Connection = dbConnection;
+        int rowsAffected = commandWithParams.ExecuteNonQuery();
+        dbConnection.Close();
+        
+        return rowsAffected > 0;
     }
 }
 
