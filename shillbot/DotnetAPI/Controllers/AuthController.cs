@@ -1,14 +1,21 @@
 using System.Data;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
 using DotnetAPI.Data;
 using DotnetAPI.Dtos;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Cryptography.KeyDerivation;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Data.SqlClient;
+using Microsoft.IdentityModel.Tokens;
 
 namespace DotnetAPI.Controllers;
 
+[Route("[controller]")]
+[Authorize]
+[ApiController]
 public class AuthController : Controller
 {
 	private readonly DataContextDapper _dapper;
@@ -20,6 +27,7 @@ public class AuthController : Controller
 		_config = config;
 	}
 
+	[AllowAnonymous]
 	[HttpPost("Register")]
 	public IActionResult Register(UserRegisterDto userRegister)
 	{
@@ -67,6 +75,7 @@ public class AuthController : Controller
 		return Ok();
 	}
 
+	[AllowAnonymous]
 	[HttpPost("Login")]
 	public IActionResult Login(UserLoginDto userLogin)
 	{
@@ -82,7 +91,28 @@ public class AuthController : Controller
 			if (passwordHash[i] != userConfirm.PasswordHash[i])
 				return Unauthorized("Username or password doesn't match");
 		}
-		return Ok();
+		
+		string sqlUserId = $"SELECT userId FROM TutorialAppSchema.Users WHERE Email = '{userLogin.Email}'";
+		int userId = _dapper.LoadDataSingle<int>(sqlUserId);
+		
+		return Ok(new Dictionary<string, string>
+				  {
+					  {"token", CreateToken(userId)}
+				  });
+	}
+
+	[HttpGet("RefreshToken")]
+	public IActionResult RefreshToken()
+	{
+		string userId = User.FindFirst("userId")?.Value + "";
+		
+		string sqlUserId = $"SELECT UserId FROM TutorialAppSchema.Users WHERE UserId = '{userId}'";
+		int userIdInt = _dapper.LoadDataSingle<int>(sqlUserId);
+		
+		return Ok(new Dictionary<string, string>
+				  {
+					  {"token", CreateToken(userIdInt)}
+				  });
 	}
 	
 	private byte[] HashPassword(string password, byte[] passwordSalt)
@@ -95,6 +125,29 @@ public class AuthController : Controller
      		prf: KeyDerivationPrf.HMACSHA256, 
      		iterationCount: 100000, 
      		numBytesRequested: 256 / 8);
+		
      	return passwordHash;
     }
+
+	private string CreateToken(int userId)
+	{
+		Claim[] claims =
+		[
+			new("userId", userId.ToString())
+		];
+		var tokenKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(
+			_config.GetSection("AppSettings:TokenKey").Value ?? string.Empty));
+		var credentials = new SigningCredentials(
+			tokenKey, SecurityAlgorithms.HmacSha512Signature);
+		var descriptor = new SecurityTokenDescriptor()
+						 {
+							 Subject = new ClaimsIdentity(claims),
+							 SigningCredentials = credentials,
+							 Expires = DateTime.UtcNow.AddDays(7)
+						 };
+		var tokenHandler = new JwtSecurityTokenHandler();
+		SecurityToken token = tokenHandler.CreateToken(descriptor);
+		
+		return tokenHandler.WriteToken(token);
+	}
 }
