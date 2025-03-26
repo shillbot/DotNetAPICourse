@@ -1,13 +1,20 @@
+using System.Data;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
+using System.Security.Cryptography;
 using System.Text;
 using Microsoft.AspNetCore.Cryptography.KeyDerivation;
+using Microsoft.Data.SqlClient;
 using Microsoft.IdentityModel.Tokens;
+using DotnetAPI.Dtos;
+using DotnetAPI.Data;
 
 namespace DotnetAPI.Helpers;
 
 public class AuthHelper(IConfiguration config)
 {
+	private readonly DataContextDapper _dapper = new(config);
+	
 	public byte[] HashPassword(string password, byte[] passwordSalt)
 	{
 		string passwordSaltPlusString = config.GetSection("AppSettings:PasswordKey").Value 
@@ -42,5 +49,33 @@ public class AuthHelper(IConfiguration config)
 		SecurityToken token = tokenHandler.CreateToken(descriptor);
 		
 		return tokenHandler.WriteToken(token);
+	}
+	
+	public bool SetPassword(UserLoginDto userSetPass)
+	{
+		byte[] passwordSalt = new byte[128 / 8];
+		using (RandomNumberGenerator rng = RandomNumberGenerator.Create())
+		{
+			rng.GetNonZeroBytes(passwordSalt);
+		}
+		var passwordHash = HashPassword(userSetPass.Password, passwordSalt);
+
+		var sqlAuth = @"[TutorialAppSchema].spRegistration_Upsert
+							@Email = @EmailParam,
+							@PasswordSalt = @PasswordSaltParam,
+							@PasswordHash = @PasswordHashParam";
+		List<SqlParameter> sqlParams = new List<SqlParameter>();
+		SqlParameter passSaltParam = new("@PasswordSaltParam", SqlDbType.VarBinary);
+		SqlParameter passHashParam = new("@PasswordHashParam", SqlDbType.VarBinary);
+		SqlParameter emailParam = new("@EmailParam", SqlDbType.VarChar, 50);
+		passSaltParam.Value = passwordSalt;
+		passHashParam.Value = passwordHash;
+		emailParam.Value = userSetPass.Email;
+		sqlParams.Add(passHashParam);
+		sqlParams.Add(passSaltParam);
+		sqlParams.Add(emailParam);
+		if (!_dapper.ExecuteSqlWithParams(sqlAuth, sqlParams))
+			throw new Exception("Could not authorize user");
+		return true;
 	}
 }

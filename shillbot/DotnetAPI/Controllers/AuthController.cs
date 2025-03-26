@@ -29,39 +29,33 @@ public class AuthController(IConfiguration config) : Controller
 		IEnumerable<string> existingUser = _dapper.LoadData<string>(sql);
 		if (existingUser.Any())
 			throw new Exception("Email already exists");
-		
-		byte[] passwordSalt = new byte[128 / 8];
-		using (RandomNumberGenerator rng = RandomNumberGenerator.Create())
-		{
-			rng.GetNonZeroBytes(passwordSalt);
-		}
-		var passwordHash = _authHelper.HashPassword(userRegister.Password, passwordSalt);
 
-		string sqlAuth =
-			@$"INSERT INTO  TutorialAppSchema.Auth(Email, PasswordHash, PasswordSalt) 
-				VALUES ('{userRegister.Email}', @PasswordHash, @PasswordSalt)";
-		List<SqlParameter> sqlParams = new List<SqlParameter>();
-		SqlParameter passSaltParam = new("@PasswordSalt", SqlDbType.VarBinary);
-		SqlParameter passHashParam = new("@PasswordHash", SqlDbType.VarBinary);
-		passSaltParam.Value = passwordSalt;
-		passHashParam.Value = passwordHash;
-		sqlParams.Add(passHashParam);
-		sqlParams.Add(passSaltParam);
-		if (!_dapper.ExecuteSqlWithParams(sqlAuth, sqlParams))
-			throw new Exception("Could not register user");
-		
-		string sqlUser = $@"
-	        INSERT INTO TutorialAppSchema.Users
-	        (
-        		FirstName, LastName, Email, Gender, Active
-	        )
-	        VALUES
-	        (
-        		'{userRegister.FirstName}', '{userRegister.LastName}', '{userRegister.Email}', '{userRegister.Gender}', 1
-	        )";
+		var userSetPass = new UserLoginDto()
+						  {
+							  Email = userRegister.Email,
+							  Password = userRegister.Password
+						  };
+		_authHelper.SetPassword(userSetPass);
+
+		var sqlUser = $@"EXEC TutorialAppSchema.spUser_Upsert
+						@FirstName = '{userRegister.FirstName}',
+						@LastName = '{userRegister.LastName}',
+						@Email = '{userRegister.Email}',
+						@Gender = '{userRegister.Gender}',
+						@JobTitle = '{userRegister.JobTitle}',
+						@Department = '{userRegister.Department}',
+						@Salary = {userRegister.Salary},
+						@Active = {userRegister.Active}";
 		if (!_dapper.ExecuteSql(sqlUser))
-			throw new Exception("Could not register user");
+			throw new Exception("Could not add or update user");
 		
+		return Ok();
+	}
+
+	[HttpPut("ResetPassword")]
+	public IActionResult ResetPassword(UserLoginDto userLogin)
+	{
+		_authHelper.SetPassword(userLogin);
 		return Ok();
 	}
 
@@ -69,17 +63,16 @@ public class AuthController(IConfiguration config) : Controller
 	[HttpPost("Login")]
 	public IActionResult Login(UserLoginDto userLogin)
 	{
-		string sqlHashSalt = @$"
+		var sqlHashSalt = @$"
 			SELECT PasswordHash, PasswordSalt
 			FROM TutorialAppSchema.Auth 
 			WHERE Email = '{userLogin.Email}'";
-		UserLoginConfirmDto userConfirm = _dapper.LoadDataSingle<UserLoginConfirmDto>(sqlHashSalt);
+		var userConfirm = _dapper.LoadDataSingle<UserLoginConfirmDto>(sqlHashSalt);
 
 		byte[] passwordHash = _authHelper.HashPassword(userLogin.Password, userConfirm.PasswordSalt);
-		for (int i = 0; i < passwordHash.Length; i++)
+		if (passwordHash.Where((t, i) => t != userConfirm.PasswordHash[i]).Any())
 		{
-			if (passwordHash[i] != userConfirm.PasswordHash[i])
-				return Unauthorized("Username or password doesn't match");
+			return Unauthorized("Username or password doesn't match");
 		}
 		
 		string sqlUserId = $"SELECT userId FROM TutorialAppSchema.Users WHERE Email = '{userLogin.Email}'";

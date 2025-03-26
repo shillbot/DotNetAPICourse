@@ -1,4 +1,5 @@
 using System.Data;
+using Dapper;
 using DotnetAPI.Data;
 using DotnetAPI.Dtos;
 using DotnetAPI.Models;
@@ -15,93 +16,76 @@ public class PostController(IConfiguration config) : Controller
 {
 	private readonly DataContextDapper _dapper = new(config);
 
-	[HttpGet("Posts")]
-	public IEnumerable<Post> GetPosts()
+	[HttpGet("Posts/{postId:int}/{userId:int}/{searchParam}")]
+	public IEnumerable<Post> GetPosts(int postId = 0, int userId = 0, string searchParam = "None")
 	{
-		const string sql = @"
-			SELECT PostId, UserId, PostTitle, PostContent, PostCreated, PostUpdated
-			FROM TutorialAppSchema.Posts";
-		return _dapper.LoadData<Post>(sql);
-	}
+		string sql = @"EXEC TutorialAppSchema.spPosts_Get";
+		string stringParameters = "";
 
-	[HttpGet("Post/{postId}")]
-	public Post GetPost(int postId)
-	{
-		var sql = @$"
-			SELECT PostId, UserId, PostTitle, PostContent, PostCreated, PostUpdated
-			FROM TutorialAppSchema.Posts
-			WHERE PostId = {postId}";
-		
-		return _dapper.LoadDataSingle<Post>(sql);
-	}
-
-	[HttpGet("PostsByUser/{userId}")]
-	public IEnumerable<Post> GetPostsByUser(int userId)
-	{
-		var sql = @$"
-			SELECT PostId, UserId, PostTitle, PostContent, PostCreated, PostUpdated
-			FROM TutorialAppSchema.Posts
-			WHERE UserId = {userId}";
-		
-		return _dapper.LoadData<Post>(sql);
+		DynamicParameters sqlParameters = new DynamicParameters();
+		if (postId != 0)
+		{
+			stringParameters += ", @PostId=@PostIdParameter";
+			sqlParameters.Add("@PostIdParameter", postId, DbType.Int32);
+		}
+		if (userId != 0)
+		{
+			stringParameters += ", @UserId=@UserIdParameter";
+			sqlParameters.Add("@UserIdParameter", userId, DbType.Int32);
+		}
+		if (searchParam.ToLower() != "none")
+		{
+			stringParameters += ", @SearchValue=@SearchValueParameter";
+			sqlParameters.Add("@SearchValueParameter", searchParam, DbType.String);
+		}
+		if (stringParameters.Length > 0)
+			sql += stringParameters.Substring(1);
+		return _dapper.LoadDataWithParameters<Post>(sql, sqlParameters);
 	}
 	
 	[HttpGet("MyPosts")]
 	public IEnumerable<Post> GetMyPosts()
 	{
 		var userId = User.FindFirst("userId")?.Value;
-		var sql = @$"
-			SELECT PostId, UserId, PostTitle, PostContent, PostCreated, PostUpdated
-			FROM TutorialAppSchema.Posts
-			WHERE UserId = {userId}";
-		
+		var sql = @$"EXEC TutorialAppSchema.spPosts_Get @UserId = {userId}";
 		return _dapper.LoadData<Post>(sql);
 	}
 
-	[HttpPost("Post")]
-	public IActionResult AddPost(PostAddDto post)
+	[HttpPut("UpsertPost")]
+	public IActionResult UpsertPost(Post postToUpsert)
 	{
-		var userId = User.FindFirst("userId")?.Value;
-		var sql = $@"
-			INSERT INTO TutorialAppSchema.Posts (UserID, PostTitle, PostContent, PostCreated, PostUpdated)
-			VALUES ({userId}, '{post.PostTitle}', '{post.PostContent}', GETDATE(), GETDATE())";
-		if (!_dapper.ExecuteSql(sql))
-			throw new DataException("Failed to add post");
+		string sql = @"EXEC TutorialAppSchema.spPosts_Upsert
+                @UserId=@UserIdParameter, 
+                @PostTitle=@PostTitleParameter, 
+                @PostContent=@PostContentParameter";
+		var sqlParameters = new DynamicParameters();
+		sqlParameters.Add("@UserIdParameter", User.FindFirst("userId")?.Value, DbType.Int32);
+		sqlParameters.Add("@PostTitleParameter", postToUpsert.PostTitle, DbType.String);
+		sqlParameters.Add("@PostContentParameter", postToUpsert.PostContent, DbType.String);
+
+		if (postToUpsert.PostId > 0)
+		{
+			sql += ", @PostId=@PostIdParameter";
+			sqlParameters.Add("@PostIdParameter", postToUpsert.PostId, DbType.Int32);
+		}
+		if (!_dapper.ExecuteSqlWithParams(sql, sqlParameters))
+			throw new Exception("Failed to upsert post!");
 		return Ok();
 	}
-
-	[HttpPut("Post")]
-	public IActionResult EditPost(PostEditDto post)
-	{
-		var userId = User.FindFirst("userId")?.Value;
-		var sql = $@"
-			UPDATE TutorialAppSchema.Posts
-			SET PostContent = '{post.PostContent}', PostUpdated = GETDATE(), PostTitle = '{post.PostTitle}'
-			WHERE PostId = {post.PostId} AND UserId = {userId}";
-		if (!_dapper.ExecuteSql(sql))
-			throw new DataException("Failed to update post");
-		return Ok();
-	}
-
+	
 	[HttpDelete("Post/{postId}")]
 	public IActionResult DeletePost(int postId)
 	{
-		var userId = User.FindFirst("userId")?.Value;
-		var sql = $@"
-			DELETE FROM TutorialAppSchema.Posts
-			WHERE PostId = {postId} AND UserId = {userId}";
-		if(!_dapper.ExecuteSql(sql))
-			throw new DataException("Failed to delete post");
+		var sql = @"EXEC TutorialAppSchema.spPost_Delete 
+	                @UserId=@UserIdParameter, 
+	                @PostId=@PostIdParameter";
+		DynamicParameters sqlParameters = new DynamicParameters();
+		sqlParameters.Add("@UserIdParameter", User.FindFirst("userId")?.Value, DbType.Int32);
+		sqlParameters.Add("@PostIdParameter", postId, DbType.Int32);
+
+		if (!_dapper.ExecuteSqlWithParams(sql, sqlParameters))
+			throw new Exception("Failed to delete post");
 		return Ok();
 	}
 
-	[HttpGet("Search/{searchText}")]
-	public IEnumerable<Post> SearchPosts(string searchText)
-	{
-		var sql = @$"
-			SELECT PostId, UserId, PostTitle, PostContent, PostCreated, PostUpdated
-			FROM TutorialAppSchema.Posts
-			WHERE PostTitle LIKE '%{searchText}%' OR PostContent LIKE '%{searchText}%'";
-		return _dapper.LoadData<Post>(sql);
-	}
 }

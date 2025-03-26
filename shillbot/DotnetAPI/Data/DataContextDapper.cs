@@ -37,7 +37,14 @@ public class DataContextDapper
         IDbConnection dbConnection = new SqlConnection(_config.GetConnectionString("DefaultConnection"));
         return dbConnection.Execute(sql);
     }
-
+    
+    public bool ExecuteSqlWithParams(string sql, DynamicParameters parameters)
+    {
+        IDbConnection dbConnection = new SqlConnection(_config.GetConnectionString("DefaultConnection"));
+        return dbConnection.Execute(sql, parameters) > 0;
+    }
+    
+    // DELETE THIS METHOD After updating AuthController
     public bool ExecuteSqlWithParams(string sql, params List<SqlParameter> parameters)
     {
         SqlCommand commandWithParams = new SqlCommand(sql);
@@ -53,5 +60,18 @@ public class DataContextDapper
         
         return rowsAffected > 0;
     }
+    
+    public IEnumerable<T> LoadDataWithParameters<T>(string sql, DynamicParameters parameters)
+    {
+        IDbConnection dbConnection = new SqlConnection(_config.GetConnectionString("DefaultConnection"));
+        return dbConnection.Query<T>(sql, parameters);
+    }
+
+    public T LoadDataSingleWithParameters<T>(string sql, DynamicParameters parameters)
+    {
+        IDbConnection dbConnection = new SqlConnection(_config.GetConnectionString("DefaultConnection"));
+        return dbConnection.QuerySingle<T>(sql, parameters);
+    }
+
 }
 

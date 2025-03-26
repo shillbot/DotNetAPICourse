@@ -8,6 +8,10 @@ public partial class UserRegisterDto
 	public string Gender { get; set; }
 	public string Password { get; set; }
 	public string PasswordConfirm { get; set; }
+	public string JobTitle { get; set; }
+	public string Department { get; set; }
+	public string Salary { get; set; }
+	public bool Active { get; set; }
 
 	public UserRegisterDto()
 	{
@@ -17,5 +21,8 @@ public partial class UserRegisterDto
 		Gender ??= string.Empty;
 		Password ??= string.Empty;
 		PasswordConfirm ??= string.Empty;
+		JobTitle ??= string.Empty;
+		Department ??= string.Empty;
+		Salary ??= string.Empty;
 	}
 }
