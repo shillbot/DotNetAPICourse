@@ -1,5 +1,6 @@
 using System.Data;
 using System.Security.Cryptography;
+using Dapper;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Data.SqlClient;
@@ -63,17 +64,17 @@ public class AuthController(IConfiguration config) : Controller
 	[HttpPost("Login")]
 	public IActionResult Login(UserLoginDto userLogin)
 	{
-		var sqlHashSalt = @$"
-			SELECT PasswordHash, PasswordSalt
-			FROM TutorialAppSchema.Auth 
-			WHERE Email = '{userLogin.Email}'";
-		var userConfirm = _dapper.LoadDataSingle<UserLoginConfirmDto>(sqlHashSalt);
+		var sqlHashSalt = """
+						   EXEC TutorialAppSchema.spLoginConfirmation_Get 
+						   @Email = @EmailParam
+						  """;
+		var sqlParams = new DynamicParameters();
+		sqlParams.Add("@EmailParam", userLogin.Email, DbType.String);
+		var userConfirm = _dapper.LoadDataSingleWithParameters<UserLoginConfirmDto>(sqlHashSalt, sqlParams);
 
 		byte[] passwordHash = _authHelper.HashPassword(userLogin.Password, userConfirm.PasswordSalt);
 		if (passwordHash.Where((t, i) => t != userConfirm.PasswordHash[i]).Any())
-		{
 			return Unauthorized("Username or password doesn't match");
-		}
 		
 		string sqlUserId = $"SELECT userId FROM TutorialAppSchema.Users WHERE Email = '{userLogin.Email}'";
 		int userId = _dapper.LoadDataSingle<int>(sqlUserId);

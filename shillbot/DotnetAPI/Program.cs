@@ -30,7 +30,7 @@ builder.Services.AddCors((options) =>
     });
 });
 
-builder.Services.AddScoped<IUserRepository, UserRepository>();
+// builder.Services.AddScoped<IUserRepository, UserRepository>();
 
 var tokenKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(
     builder.Configuration.GetSection("AppSettings:TokenKey").Value ?? string.Empty));

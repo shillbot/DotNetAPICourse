@@ -3,6 +3,7 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
+using Dapper;
 using Microsoft.AspNetCore.Cryptography.KeyDerivation;
 using Microsoft.Data.SqlClient;
 using Microsoft.IdentityModel.Tokens;
@@ -64,16 +65,11 @@ public class AuthHelper(IConfiguration config)
 							@Email = @EmailParam,
 							@PasswordSalt = @PasswordSaltParam,
 							@PasswordHash = @PasswordHashParam";
-		List<SqlParameter> sqlParams = new List<SqlParameter>();
-		SqlParameter passSaltParam = new("@PasswordSaltParam", SqlDbType.VarBinary);
-		SqlParameter passHashParam = new("@PasswordHashParam", SqlDbType.VarBinary);
-		SqlParameter emailParam = new("@EmailParam", SqlDbType.VarChar, 50);
-		passSaltParam.Value = passwordSalt;
-		passHashParam.Value = passwordHash;
-		emailParam.Value = userSetPass.Email;
-		sqlParams.Add(passHashParam);
-		sqlParams.Add(passSaltParam);
-		sqlParams.Add(emailParam);
+		var sqlParams = new DynamicParameters();
+		sqlParams.Add("@EmailParam", userSetPass.Email, DbType.String);
+		sqlParams.Add("@PasswordSaltParam", passwordSalt, DbType.Binary);
+		sqlParams.Add("@PasswordHashParam", passwordHash, DbType.Binary);
+
 		if (!_dapper.ExecuteSqlWithParams(sqlAuth, sqlParams))
 			throw new Exception("Could not authorize user");
 		return true;
