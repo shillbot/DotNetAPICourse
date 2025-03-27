@@ -1,5 +1,6 @@
 using System.Data;
 using System.Security.Cryptography;
+using AutoMapper;
 using Dapper;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -7,6 +8,7 @@ using Microsoft.Data.SqlClient;
 using DotnetAPI.Data;
 using DotnetAPI.Dtos;
 using DotnetAPI.Helpers;
+using DotnetAPI.Models;
 
 namespace DotnetAPI.Controllers;
 
@@ -17,6 +19,11 @@ public class AuthController(IConfiguration config) : Controller
 {
 	private readonly DataContextDapper _dapper = new(config);
 	private readonly AuthHelper _authHelper = new(config);
+	private readonly ReusableSql _reusableSql = new(config);
+	private readonly IMapper _mapper = new Mapper(new MapperConfiguration(cfg =>
+	{
+		cfg.CreateMap<UserRegisterDto, UserComplete>();
+	}));
 
 	[AllowAnonymous]
 	[HttpPost("Register")]
@@ -37,19 +44,11 @@ public class AuthController(IConfiguration config) : Controller
 							  Password = userRegister.Password
 						  };
 		_authHelper.SetPassword(userSetPass);
-
-		var sqlUser = $@"EXEC TutorialAppSchema.spUser_Upsert
-						@FirstName = '{userRegister.FirstName}',
-						@LastName = '{userRegister.LastName}',
-						@Email = '{userRegister.Email}',
-						@Gender = '{userRegister.Gender}',
-						@JobTitle = '{userRegister.JobTitle}',
-						@Department = '{userRegister.Department}',
-						@Salary = {userRegister.Salary},
-						@Active = {userRegister.Active}";
-		if (!_dapper.ExecuteSql(sqlUser))
-			throw new Exception("Could not add or update user");
 		
+		var userComplete = _mapper.Map<UserComplete>(userRegister);
+		userComplete.Active = true;
+		if (!_reusableSql.UpsertUser(userComplete))
+			throw new Exception("Could not add or update user");
 		return Ok();
 	}
 
